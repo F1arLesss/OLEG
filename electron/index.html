@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>О.Л.Е.Г. 3.0</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Прозрачный canvas всего окна (700x600). Внутри анимируется карточка. -->
+  <div id="oleg-container" class="hidden">
+    
+    <!-- Строка ввода (всегда видна в свернутом состоянии) -->
+    <div class="input-row">
+      <div class="search-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+
+      <input
+        id="prompt-input"
+        type="text"
+        placeholder="Спроси или дай команду О.Л.Е.Г.у"
+        autocomplete="off"
+        spellcheck="false"
+        autofocus
+      />
+
+      <button id="mic-btn" class="icon-btn mic-btn" type="button" title="Голосовой ввод (нажмите, чтобы говорить)">
+        <svg class="mic-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="22"></line>
+        </svg>
+      </button>
+
+      <button id="settings-btn" class="icon-btn settings-btn" type="button" title="Панель настроек">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+
+      <div id="status-dot" class="dot offline" title="Проверка подключения..."></div>
+    </div>
+
+    <!-- Быстрый калькулятор и конвертер на лету (0ms без запроса к ИИ) -->
+    <div id="quick-calc-bar" class="quick-calc-bar hidden"></div>
+
+    <!-- Панель настроек (Settings UI) -->
+    <div id="settings-panel" class="settings-panel hidden">
+      <div class="settings-header">
+        <h3>⚙️ Настройки О.Л.Е.Г.</h3>
+        <button id="settings-close-btn" class="settings-close-btn" type="button">✕</button>
+      </div>
+      <div class="settings-body">
+        <div class="settings-group">
+          <label>API Ключ (OpenRouter или Google Gemini):</label>
+          <div class="input-password-wrapper">
+            <input type="password" id="cfg-api-key" placeholder="sk-or- (OpenRouter) или AIzaSy / AQ. (Gemini)" autocomplete="off" spellcheck="false" />
+            <button type="button" class="password-toggle-btn hidden" data-target="cfg-api-key" title="Показать / скрыть">
+              <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-group flex-1">
+            <label>Модель нейросети:</label>
+            <input type="text" id="cfg-model" placeholder="gemini-2.5-flash" />
+          </div>
+          <div class="settings-group flex-1">
+            <label>Base URL:</label>
+            <input type="text" id="cfg-base-url" placeholder="https://openrouter.ai/api/v1" />
+          </div>
+        </div>
+        <div class="settings-group">
+          <div class="label-with-hint">
+            <label>Groq API Ключ (Whisper Large v3 Turbo — быстрый облачный слух):</label>
+            <button type="button" class="hint-toggle-btn" id="groq-guide-btn" title="Подробный гайд как получить бесплатно">Как получить бесплатно?</button>
+          </div>
+          <div class="input-password-wrapper">
+            <input type="password" id="cfg-groq-key" placeholder="gsk_ (0 МБ на диске, отклик 150мс)" autocomplete="off" spellcheck="false" />
+            <button type="button" class="password-toggle-btn hidden" data-target="cfg-groq-key" title="Показать / скрыть">
+              <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+          <!-- Встроенный интерактивный гайд по получению ключа -->
+          <div id="groq-guide-card" class="guide-card hidden">
+            <div class="guide-card-title">📖 Пошаговый гайд: получение бесплатного ключа Groq (1 минута)</div>
+            <ol class="guide-steps">
+              <li>Перейдите в консоль: <a href="https://console.groq.com/keys" target="_blank" class="link-btn">console.groq.com/keys ↗</a></li>
+              <li>Войдите в 1 клик через аккаунт <b>Google</b> или <b>GitHub</b>.</li>
+              <li>Нажмите кнопку <b>Create API Key</b>.</li>
+              <li>В поле Name введите <code>OLEG</code> и нажмите <b>Create</b>.</li>
+              <li>Скопируйте ключ (начинается на <code>gsk_...</code>) и вставьте в поле выше.</li>
+            </ol>
+            <div class="guide-card-footer">
+              ⚡ <b>100% бесплатно</b> (до 2 000 команд в день). Обеспечивает кристально чистое распознавание речи без занятия места на вашем ПК!
+            </div>
+          </div>
+        </div>
+        <div class="settings-row">
+          <div class="settings-group flex-1">
+            <label>Озвучка ответов (TTS):</label>
+            <div class="checkbox-row">
+              <input type="checkbox" id="cfg-tts-enabled" />
+              <span>Включить голос</span>
+            </div>
+          </div>
+          <div class="settings-group flex-1">
+            <label>Голос:</label>
+            <select id="cfg-tts-voice">
+              <option value="ru-RU-DmitryNeural">Дмитрий (мужской)</option>
+              <option value="ru-RU-SvetlanaNeural">Светлана (женский)</option>
+            </select>
+          </div>
+          <div class="settings-group flex-1">
+            <label>Стиль речи:</label>
+            <select id="cfg-tts-rate">
+              <option value="+8%">Живой и бодрый (+8%)</option>
+              <option value="+12%">Быстрый (+12%)</option>
+              <option value="+0%">Спокойный (+0%)</option>
+            </select>
+          </div>
+        </div>
+        <div class="settings-group">
+          <label>Прокси для API (опционально):</label>
+          <input type="text" id="cfg-proxy" placeholder="scheme://ip:port или scheme://user:pass:ip:port" />
+        </div>
+        <div class="settings-row">
+          <div class="settings-group flex-1">
+            <label>Spotify Client ID:</label>
+            <div class="input-password-wrapper">
+              <input type="password" id="cfg-spotify-id" placeholder="Client ID" autocomplete="off" spellcheck="false" />
+              <button type="button" class="password-toggle-btn hidden" data-target="cfg-spotify-id" title="Показать / скрыть">
+                <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="settings-group flex-1">
+            <label>Spotify Client Secret:</label>
+            <div class="input-password-wrapper">
+              <input type="password" id="cfg-spotify-secret" placeholder="Client Secret" autocomplete="off" spellcheck="false" />
+              <button type="button" class="password-toggle-btn hidden" data-target="cfg-spotify-secret" title="Показать / скрыть">
+                <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="settings-group">
+          <label>Throne VPN API Key:</label>
+          <div class="input-password-wrapper">
+            <input type="password" id="cfg-throne-key" placeholder="Throne API Key" autocomplete="off" spellcheck="false" />
+            <button type="button" class="password-toggle-btn hidden" data-target="cfg-throne-key" title="Показать / скрыть">
+              <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="settings-footer">
+        <button id="cfg-btn-clipboard" class="secondary-btn" type="button">📋 История буфера</button>
+        <button id="cfg-btn-clear-mem" class="secondary-btn" type="button">🧠 Очистить память</button>
+        <button id="cfg-btn-save" class="primary-btn" type="button">Сохранить</button>
+      </div>
+    </div>
+
+    <!-- Область ответа (динамическая высота через ResizeObserver) -->
+    <div class="response-wrapper">
+      <div id="response-area" class="response-content">
+        <!-- Сообщение пользователя (перетекает из строки ввода) -->
+        <div id="user-message" class="user-message"></div>
+
+        <!-- Индикатор загрузки / размышления -->
+        <div id="loader" class="loader hidden">
+          <div class="loader-dot"></div>
+          <div class="loader-dot"></div>
+          <div class="loader-dot"></div>
+          <span class="loader-label">О.Л.Е.Г. думает...</span>
+        </div>
+
+        <!-- Текст ответа с эффектом печати -->
+        <div id="response-text"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

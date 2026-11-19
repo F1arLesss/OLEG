@@ -1,0 +1,1205 @@
+/* ==========================================================
+   О.Л.Е.Г. 3.0 — Spotlight Glass UI
+   Плавное раскрытие карточки, стеклянный блюр, минимализм
+   ========================================================== */
+
+/* ---- Reset & Canvas ---- */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ---- Глобальное сиреневое выделение текста для всех элементов и тегов ---- */
+::selection, *::selection {
+  background: rgba(167, 139, 250, 0.42) !important;
+  color: #ffffff !important;
+}
+
+::-moz-selection, *::-moz-selection {
+  background: rgba(167, 139, 250, 0.42) !important;
+  color: #ffffff !important;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background: transparent !important;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  color: #f4f4f6;
+  user-select: none;
+  -webkit-app-region: no-drag;
+}
+
+/* ---- Spotlight Container (Главная панель ввода и результатов) ---- */
+#oleg-container,
+.search-container,
+.input-wrapper,
+.container {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  width: 660px;
+  min-width: 660px;
+  max-width: 940px;
+  box-sizing: border-box;
+  
+  /* Динамическая высота: подстраивается под содержимое */
+  height: fit-content;
+  max-height: 540px;
+  border-radius: 18px;
+  overflow: hidden;
+
+  /* Frosted Glass Effect (Чистый плоский дизайн без теней) */
+  background: rgba(23, 24, 33, 0.88);
+  backdrop-filter: blur(34px) saturate(180%);
+  -webkit-backdrop-filter: blur(34px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background-clip: padding-box;
+
+  /* Полное отключение всех внешних и внутренних теней */
+  box-shadow: none !important;
+
+  /* Плавный переход внешнего вида и динамической ширины с красивым пружинистым отскоком */
+  transition:
+    width 0.48s cubic-bezier(0.34, 1.45, 0.64, 1),
+    border-color 0.25s ease,
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+/* Состояние при скрытом окне (Drop-down анимация) */
+#oleg-container.hidden,
+.search-container.hidden,
+.input-wrapper.hidden,
+.container.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
+  pointer-events: none;
+}
+
+/* Раскрытое состояние контейнера */
+#oleg-container.expanded,
+.search-container.expanded,
+.input-wrapper.expanded,
+.container.expanded {
+  border-color: rgba(139, 92, 246, 0.4);
+  box-shadow: none !important;
+  max-height: 600px;
+}
+
+/* ---- Input Row ---- */
+.input-row {
+  height: 62px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 14px;
+  border-radius: 18px 18px 0 0;
+  box-shadow: none !important;
+}
+
+/* В свернутом виде строка полностью повторяет скругление контейнера */
+#oleg-container:not(.expanded) .input-row {
+  border-radius: 18px;
+}
+
+.search-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.input-row:focus-within .search-icon {
+  color: #a78bfa;
+}
+
+#prompt-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 17.5px;
+  color: #ffffff;
+  caret-color: #a78bfa;
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: -0.2px;
+}
+
+#prompt-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ---- Microphone Button (Голосовой ввод) ---- */
+.mic-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 6px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.4);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.mic-btn:hover {
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.15);
+  transform: scale(1.1);
+}
+
+.mic-btn:active {
+  transform: scale(0.92);
+}
+
+/* Активное состояние прослушивания (красный неон + пульсация) */
+.mic-btn.recording {
+  color: #ef4444 !important;
+  background: rgba(239, 68, 68, 0.18) !important;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.65) !important;
+  animation: micPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes micPulse {
+  0%, 100% {
+    transform: scale(1.05);
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.45);
+  }
+  50% {
+    transform: scale(1.22);
+    box-shadow: 0 0 18px rgba(239, 68, 68, 0.85);
+  }
+}
+
+/* Состояние обработки аудио (распознавание текста нейросетью) */
+.mic-btn.processing {
+  color: #c084fc !important;
+  background: rgba(192, 132, 252, 0.16) !important;
+  animation: micSpin 1.1s infinite linear;
+}
+
+@keyframes micSpin {
+  0% { transform: scale(1.1) rotate(0deg); }
+  50% { transform: scale(1.22) rotate(180deg); }
+  100% { transform: scale(1.1) rotate(360deg); }
+}
+
+/* Connection Status Dot */
+.dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background 0.3s, box-shadow 0.3s, transform 0.3s;
+}
+
+.dot.online {
+  background: #22c55e;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.65);
+}
+
+.dot.offline {
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.65);
+}
+
+.dot.setup {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+  animation: setupPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes setupPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
+  }
+  50% {
+    transform: scale(1.28);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.95);
+  }
+}
+
+.dot.success-flash {
+  background: #10b981 !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.95) !important;
+  animation: greenGlow 1.2s ease-out;
+}
+
+@keyframes greenGlow {
+  0% {
+    transform: scale(1.45);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 1);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.65);
+  }
+}
+
+@keyframes inputShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.input-row.shake {
+  animation: inputShake 0.35s ease-in-out;
+}
+
+/* Плавное скрытие кнопок голоса и настроек во время настройки и красивое появление */
+.mic-btn,
+.settings-btn {
+  transition:
+    opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.45s cubic-bezier(0.34, 1.45, 0.64, 1),
+    width 0.42s ease,
+    padding 0.42s ease,
+    margin 0.42s ease,
+    color 0.22s ease,
+    background 0.22s ease;
+  overflow: hidden;
+}
+
+.input-row.setup-active .mic-btn,
+.input-row.setup-active .settings-btn {
+  opacity: 0 !important;
+  transform: scale(0.5) rotate(-15deg) !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Мягкое свечение всего контейнера при завершении настройки (без резких линий) */
+.container.setup-complete-glow,
+#oleg-container.setup-complete-glow {
+  border-color: rgba(52, 211, 153, 0.55) !important;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.22) !important;
+  transition: border-color 0.6s ease, box-shadow 0.6s ease !important;
+}
+
+#prompt-input.setup-success {
+  color: #34d399 !important;
+  caret-color: transparent !important;
+  font-weight: 500;
+  text-shadow: 0 0 14px rgba(52, 211, 153, 0.65), 0 0 28px rgba(16, 185, 129, 0.3);
+  animation: smoothSuccessGlow 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes smoothSuccessGlow {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+    filter: blur(5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+#prompt-input.setup-hint {
+  color: #c4b5fd !important;
+  caret-color: transparent !important;
+  font-weight: 450;
+  text-shadow: 0 0 12px rgba(167, 139, 250, 0.5), 0 0 24px rgba(139, 92, 246, 0.25);
+  animation: smoothHintGlow 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes smoothHintGlow {
+  0% {
+    opacity: 0;
+    transform: translateY(4px) scale(0.97);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* ---- Панель быстрого калькулятора / конвертера на лету ---- */
+.quick-calc-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13.5px;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.quick-calc-bar:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.quick-calc-bar.hidden {
+  display: none !important;
+}
+
+.quick-calc-bar .calc-result {
+  color: #38ef7d;
+  font-weight: 600;
+  font-size: 14.5px;
+}
+
+.quick-calc-bar .calc-hint {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ---- Response Wrapper (JS-driven smooth height animation via ResizeObserver) ---- */
+.response-wrapper {
+  height: 0;
+  max-height: 460px;
+  overflow: hidden;
+  transition: height 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ---- Response Content / Area (Внутренний контейнер) ---- */
+#response-area,
+.response-content {
+  min-height: 0;
+  max-height: 460px;
+  padding: 0 22px;
+  opacity: 0;
+  border-top: 1px solid transparent;
+
+  transition:
+    opacity 0.22s ease,
+    border-color 0.25s ease;
+}
+
+/* Раскрытое состояние области ответа */
+#oleg-container.expanded #response-area,
+#oleg-container.expanded .response-content {
+  opacity: 1;
+  padding: 16px 22px 20px;
+  overflow-y: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ---- Кастомные тонкие полупрозрачные скроллбары (Не нативные WebKit) ---- */
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
+}
+
+::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-track-piece,
+*::-webkit-scrollbar-track-piece {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 250, 0.35) !important;
+  border-radius: 10px !important;
+  border: 1px solid transparent !important;
+  background-clip: padding-box !important;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 139, 250, 0.75) !important;
+}
+
+::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Scrollbar области ответа */
+#response-area::-webkit-scrollbar {
+  width: 5px !important;
+}
+
+#response-area::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+#response-area::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+#response-area::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-radius: 6px !important;
+}
+
+#response-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 139, 250, 0.55) !important;
+}
+
+/* Scrollbar панели настроек */
+.settings-panel::-webkit-scrollbar,
+#settings-panel::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.settings-panel::-webkit-scrollbar-button,
+#settings-panel::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.settings-panel::-webkit-scrollbar-track,
+#settings-panel::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.25) !important;
+  border-radius: 10px !important;
+  margin: 6px 0 !important;
+}
+
+.settings-panel::-webkit-scrollbar-thumb,
+#settings-panel::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 250, 0.45) !important;
+  border-radius: 10px !important;
+}
+
+.settings-panel::-webkit-scrollbar-thumb:hover,
+#settings-panel::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 139, 250, 0.8) !important;
+}
+
+/* ---- User Message (Flow animation from input) ---- */
+.user-message {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #a1a1aa;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  word-break: break-word;
+  white-space: pre-wrap;
+  display: block;
+  user-select: text;
+  cursor: default !important;
+}
+
+.user-message::selection,
+.user-message *::selection {
+  background: rgba(167, 139, 250, 0.42) !important;
+  color: #ffffff !important;
+}
+
+.user-message:empty {
+  display: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.user-message::before {
+  content: "Вы";
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.15);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  padding: 2px 7px;
+  border-radius: 6px;
+  margin-right: 9px;
+  display: inline-block;
+  vertical-align: 1px;
+}
+
+.user-message.animate {
+  animation: slideDownFade 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes slideDownFade {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ---- Response Text & Typing Animation ---- */
+#response-text {
+  font-size: 15px;
+  line-height: 1.68;
+  color: #f1f2f6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-weight: 400;
+  user-select: text;
+  cursor: default !important;
+  letter-spacing: -0.15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+#response-text.typing {
+  animation: responseAppear 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+#response-text.revealed {
+  animation: textFinishGlow 0.6s ease-out;
+}
+
+@keyframes responseAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes textFinishGlow {
+  0% {
+    text-shadow: 0 0 14px rgba(167, 139, 250, 0.45);
+  }
+  100% {
+    text-shadow: none;
+  }
+}
+
+/* Неоновый пульсирующий курсор печати */
+.typing-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 16px;
+  margin-left: 3px;
+  vertical-align: -2px;
+  background: linear-gradient(135deg, #c4b5fd 0%, #a78bfa 50%, #818cf8 100%);
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(167, 139, 250, 0.8), 0 0 3px rgba(196, 181, 253, 0.9);
+  animation: cursorPulse 0.75s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes cursorPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(167, 139, 250, 0.8), 0 0 3px rgba(196, 181, 253, 0.9);
+  }
+  50% {
+    opacity: 0.15;
+    transform: scale(0.92);
+    box-shadow: 0 0 2px rgba(167, 139, 250, 0.2);
+  }
+}
+
+#response-text::selection,
+#response-text *::selection {
+  background: rgba(167, 139, 250, 0.42) !important;
+  color: #ffffff !important;
+}
+
+#response-text.error {
+  color: #f87171;
+}
+
+#response-text.error::selection {
+  background: rgba(248, 113, 113, 0.35);
+  color: #ffffff;
+}
+
+/* ---- Elegant Loader ---- */
+.loader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+}
+
+.loader.hidden {
+  display: none;
+}
+
+.loader-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #a78bfa;
+  animation: bounceDot 1.2s infinite ease-in-out;
+}
+
+.loader-dot:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.loader-dot:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+.loader-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.35);
+  margin-left: 6px;
+  letter-spacing: -0.1px;
+}
+
+@keyframes bounceDot {
+  0%, 80%, 100% {
+    transform: scale(0.7);
+    opacity: 0.3;
+  }
+  40% {
+    transform: scale(1.15);
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(167, 139, 250, 0.6);
+  }
+}
+
+
+/* ---- Markdown & Code Formatting ---- */
+.inline-code {
+  font-family: "Cascadia Code", Consolas, "Fira Code", monospace;
+  font-size: 13.5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #c4b5fd;
+  padding: 1px 6px;
+  border-radius: 5px;
+  word-break: break-all;
+}
+
+.code-block {
+  margin: 10px 0;
+  padding: 12px 14px;
+  background: rgba(15, 16, 22, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow-x: auto;
+  font-family: "Cascadia Code", Consolas, "Fira Code", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #a7f3d0;
+  user-select: text;
+}
+
+.code-block code {
+  font-family: inherit;
+  color: inherit;
+}
+
+.chat-link {
+  color: #a78bfa;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(167, 139, 250, 0.5);
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.chat-link:hover {
+  color: #c4b5fd;
+  border-color: #c4b5fd;
+}
+
+.chat-list {
+  margin: 8px 0 8px 20px;
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.list-item {
+  position: relative;
+  padding-left: 18px;
+  margin-bottom: 5px;
+  line-height: 1.55;
+}
+
+.list-item::before {
+  content: "•";
+  position: absolute;
+  left: 0;
+  color: #a78bfa;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+#response-text strong {
+  color: #ffffff;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+}
+
+#response-text em {
+  color: #ddd6fe;
+  font-style: italic;
+}
+
+/* Заголовки ответов */
+.chat-h1, .chat-h2, .chat-h3 {
+  color: #ffffff;
+  font-weight: 600;
+  margin: 12px 0 6px 0;
+  letter-spacing: -0.2px;
+  line-height: 1.4;
+}
+
+.chat-h1 {
+  font-size: 17px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 4px;
+}
+
+.chat-h2 {
+  font-size: 16px;
+  color: #ede9fe;
+}
+
+.chat-h3 {
+  font-size: 15px;
+  color: #c4b5fd;
+}
+
+/* ==========================================================
+   Панель настроек (Settings UI) и кнопка шестеренки
+   ========================================================== */
+
+.settings-btn {
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 6px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.4);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+}
+
+.settings-btn:hover {
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.15);
+  transform: scale(1.1) rotate(30deg);
+}
+
+.settings-btn:active {
+  transform: scale(0.92);
+}
+
+/* ---- Settings Panel (Плавное выдвижение с отпруживанием на GPU) ---- */
+.settings-panel {
+  height: 0;
+  max-height: 480px;
+  overflow-y: auto;
+  overflow-y: overlay;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding: 0 14px 0 20px;
+  border-top: 1px solid transparent;
+  background: rgba(15, 16, 24, 0.95);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  opacity: 0;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -webkit-app-region: no-drag !important;
+  pointer-events: none;
+  will-change: height, opacity, padding;
+  /* Плавное быстрое закрытие без дребезга */
+  transition:
+    height 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    padding 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease,
+    border-color 0.18s ease;
+}
+
+/* Раскрытое состояние с чистым упругим отпруживанием */
+.settings-panel.open {
+  height: 480px;
+  opacity: 1;
+  padding: 16px 14px 20px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: auto !important;
+  transition:
+    height 0.36s cubic-bezier(0.34, 1.45, 0.64, 1),
+    padding 0.36s cubic-bezier(0.34, 1.45, 0.64, 1),
+    opacity 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.settings-panel input,
+.settings-panel select,
+.settings-panel button {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -webkit-app-region: no-drag !important;
+  pointer-events: auto !important;
+}
+
+.settings-panel.hidden {
+  display: none !important;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.settings-header h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ede9fe;
+}
+
+.settings-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.settings-close-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.settings-row {
+  display: flex;
+  gap: 12px;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+.settings-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.settings-group input[type="text"],
+.settings-group input[type="password"],
+.settings-group select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: #f4f4f6;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  font-family: inherit;
+}
+
+.settings-group input:focus,
+.settings-group select:focus {
+  border-color: #a78bfa;
+  background: rgba(167, 139, 250, 0.08);
+}
+
+.settings-group select {
+  cursor: pointer;
+}
+
+.settings-group select option {
+  background: #171821;
+  color: #f4f4f6;
+}
+
+/* Обертка поля с кнопкой-глазиком для скрытия/показа пароля */
+.input-password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-password-wrapper input {
+  width: 100%;
+  padding-right: 36px !important;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  border-radius: 6px;
+  transition:
+    opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.34, 1.45, 0.64, 1),
+    color 0.18s ease,
+    background 0.18s ease;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-app-region: no-drag !important;
+  pointer-events: auto !important;
+}
+
+.password-toggle-btn.hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transform: translateY(-50%) scale(0.65) !important;
+}
+
+.password-toggle-btn:hover {
+  color: #a78bfa;
+  background: rgba(167, 139, 250, 0.15);
+}
+
+.password-toggle-btn:active {
+  transform: translateY(-50%) scale(0.92);
+}
+
+.password-toggle-btn.revealed {
+  color: #c4b5fd;
+}
+
+.password-toggle-btn svg {
+  pointer-events: none;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 35px;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #8b5cf6;
+  cursor: pointer;
+}
+
+.checkbox-row span {
+  font-size: 13px;
+  color: #ddd6fe;
+}
+
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.settings-footer button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.primary-btn {
+  background: #8b5cf6;
+  color: #ffffff;
+}
+
+.primary-btn:hover {
+  background: #7c3aed;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+}
+
+.primary-btn.saved-success {
+  background: #10b981 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.45) !important;
+  transform: scale(1.02);
+  transition: all 0.25s ease;
+}
+
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+/* ---- Подсказки и встроенный гайд Groq ---- */
+.label-with-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+
+.label-with-hint label {
+  margin-bottom: 0 !important;
+}
+
+.hint-toggle-btn {
+  background: rgba(167, 139, 250, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  color: #c4b5fd;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+  outline: none;
+  -webkit-app-region: no-drag !important;
+}
+
+.hint-toggle-btn:hover {
+  background: rgba(167, 139, 250, 0.25);
+  color: #ffffff;
+  border-color: #a78bfa;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.3);
+}
+
+.guide-card {
+  margin-top: 8px;
+  padding: 12px 14px;
+  background: rgba(26, 21, 48, 0.75);
+  border: 1px solid rgba(167, 139, 250, 0.25);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  animation: fadeInDown 0.2s ease-out;
+}
+
+.guide-card.hidden {
+  display: none !important;
+}
+
+.guide-card-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #e9d5ff;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.guide-steps {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 11.5px;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.guide-steps li {
+  margin-bottom: 4px;
+}
+
+.guide-steps code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-family: Consolas, monospace;
+  color: #a78bfa;
+}
+
+.guide-steps .link-btn {
+  color: #38bdf8;
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.guide-steps .link-btn:hover {
+  color: #7dd3fc;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.5);
+}
+
+.guide-card-footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.guide-card-footer b {
+  color: #34d399;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

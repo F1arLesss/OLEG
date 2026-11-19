@@ -1,0 +1,87 @@
+# ============================================================
+# О.Л.Е.Г. — .gitignore
+# Защита персональных данных, API-ключей и временных файлов
+# ============================================================
+
+# 1. Секреты и пользовательские данные (КРИТИЧНО)
+*.env
+*.env.*
+!*.env.example
+!**/.env.example
+.env
+backend/.env
+
+# Кеш авторизации Spotify OAuth
+.cache
+backend/.cache
+
+# Память ассистента и пользовательские факты
+backend/memory.json
+memory.json
+backend/mem0_data/
+mem0_data/
+
+# Персональные данные пользователя (буфер, напоминания, задачи)
+backend/data/clipboard_history.json
+backend/data/reminders.json
+backend/data/scheduled_tasks.json
+backend/data/tts_cache/
+backend/data/*.tmp
+backend/recordings/
+backend/vosk_models/
+
+# Временные аудиофайлы (кроме встроенных системных звуков)
+*.wav
+*.mp3
+!backend/sounds/**
+!electron/sounds/**
+
+# 2. Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+.venv/
+ENV/
+backend/venv/
+backend/.venv/
+
+# 3. Node & Electron
+node_modules/
+electron/node_modules/
+electron/.package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 4. Временные файлы и скретчи
+scratch/
+*.tmp
+*.log
+
+# 5. Системные файлы и IDE
+.vscode/
+.idea/
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.swp
+*.swo
